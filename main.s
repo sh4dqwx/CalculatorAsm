@@ -19,6 +19,12 @@ _start:
   # Check choosed option
   cmp $1, %eax
   je addition
+  cmp $2, %eax
+  je subtraction
+  cmp $3, %eax
+  je multiplication
+  cmp $4, %eax
+  je division
   # Finish procedure
   mov %ebp, %esp
   pop %ebp
@@ -68,11 +74,127 @@ addition:
   jmp _start
 
 subtraction:
+  # Print first number prompt
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
-  movl $321, %ecx
-  movl $10, %edx
+  leal fn_prompt, %ecx
+  movl $fn_prompt_len, %edx
   int $0x80
+  # Read first number from stdin
+  call _read_number
+  mov %eax, -4(%ebp)
+  # Print second number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal sn_prompt, %ecx
+  movl $sn_prompt_len, %edx
+  int $0x80
+  # Read second number from stdin
+  call _read_number
+  mov %eax, -8(%ebp)
+  # Subtract two numbers
+  mov -4(%ebp), %eax
+  mov -8(%ebp), %ebx
+  sub %ebx, %eax
+  push %eax
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer, %ecx
+  movl $answer_len, %edx
+  int $0x80
+  # Print answer value
+  call _write_number
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  # Back to start
+  jmp _start
+
+multiplication:
+  # Print first number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal fn_prompt, %ecx
+  movl $fn_prompt_len, %edx
+  int $0x80
+  # Read first number from stdin
+  call _read_number
+  mov %eax, -4(%ebp)
+  # Print second number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal sn_prompt, %ecx
+  movl $sn_prompt_len, %edx
+  int $0x80
+  # Read second number from stdin
+  call _read_number
+  mov %eax, -8(%ebp)
+  # Multiply two numbers
+  mov -4(%ebp), %eax
+  mov -8(%ebp), %ebx
+  imul %ebx, %eax
+  push %eax
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer, %ecx
+  movl $answer_len, %edx
+  int $0x80
+  # Print answer value
+  call _write_number
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  # Back to start
+  jmp _start
+
+division:
+  # Print first number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal fn_prompt, %ecx
+  movl $fn_prompt_len, %edx
+  int $0x80
+  # Read first number from stdin
+  call _read_number
+  mov %eax, -4(%ebp)
+  # Print second number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal sn_prompt, %ecx
+  movl $sn_prompt_len, %edx
+  int $0x80
+  # Read second number from stdin
+  call _read_number
+  mov %eax, -8(%ebp)
+  # Divide two numbers
+  mov -4(%ebp), %eax
+  mov -8(%ebp), %ebx
+  xor %edx, %edx
+  idiv %ebx
+  push %eax
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer, %ecx
+  movl $answer_len, %edx
+  int $0x80
+  # Print answer value
+  call _write_number
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  # Back to start
   jmp _start
 
 _write_number:
@@ -165,7 +287,7 @@ loop_end:
   .equ STDIN, 0
   .equ STDOUT, 1
 main_menu:
-  .asciz "Kalkulator, wybierz działanie:\n1. Dodawanie\n2. Odejmowanie\n3. Mnożenie\n4. Dzielenie\n"
+  .asciz "Kalkulator, wybierz działanie:\n1. Dodawanie\n2. Odejmowanie\n3. Mnożenie\n4. Dzielenie\n0. Wyjdź\n"
 main_menu_end:
   .equ main_menu_len, main_menu_end - main_menu
 fn_prompt:
