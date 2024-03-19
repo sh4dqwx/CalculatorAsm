@@ -7,7 +7,7 @@ _start:
   # Init procedure
   push %ebp
   mov %esp, %ebp
-  sub $8, %esp
+  sub $12, %esp
   # Print main menu
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
@@ -25,6 +25,100 @@ _start:
   movl $SYS_EXIT, %eax
   xorl %ebx, %ebx
   int $0x80
+
+addition:
+  # Print first number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal fn_prompt, %ecx
+  movl $fn_prompt_len, %edx
+  int $0x80
+  # Read first number from stdin
+  call _read_number
+  mov %eax, -4(%ebp)
+  # Print second number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal sn_prompt, %ecx
+  movl $sn_prompt_len, %edx
+  int $0x80
+  # Read second number from stdin
+  call _read_number
+  mov %eax, -8(%ebp)
+  # Add two numbers
+  mov -4(%ebp), %eax
+  mov -8(%ebp), %ebx
+  add %ebx, %eax
+  push %eax
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer, %ecx
+  movl $answer_len, %edx
+  int $0x80
+  # Print answer value
+  call _write_number
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  # Back to start
+  jmp _start
+
+subtraction:
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  movl $321, %ecx
+  movl $10, %edx
+  int $0x80
+  jmp _start
+
+_write_number:
+  # Init procedure
+  push %ebp
+  mov %esp, %ebp
+  # Convert number into string
+  mov 8(%ebp), %eax
+  leal buffer, %edi
+  movl $10, %ebx
+  movl $0, %ecx
+write_number_loop:
+  cmpl $0, %eax
+  je write_number_end
+  xor %edx, %edx
+  idiv %ebx
+  addl $48, %edx
+  movb %dl, (%edi)
+  inc %edi
+  inc %ecx
+  jmp write_number_loop
+write_number_end:
+  # Reverse buffer
+  leal buffer, %esi
+  subl $1, %edi
+reverse_loop:
+  cmp %edi, %esi
+  jge reverse_loop_end
+  movb (%esi), %al
+  movb (%edi), %bl
+  movb %bl, (%esi)
+  movb %al, (%edi)
+  inc %esi
+  dec %edi
+  jmp reverse_loop
+reverse_loop_end:
+  # Print number
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  mov %ecx, %edx
+  leal buffer, %ecx
+  int $0x80
+  # Finish procedure
+  mov %ebp, %esp
+  pop %ebp
+  ret
 
 _read_number:
   # Init procedure
@@ -64,59 +158,6 @@ loop_end:
   pop %ebp
   ret 
 
-addition:
-  # Print first number prompt
-  movl $SYS_WRITE, %eax
-  movl $STDOUT, %ebx
-  leal fn_prompt, %ecx
-  movl $fn_prompt_len, %edx
-  int $0x80
-  # Read first number from stdin
-  call _read_number
-  mov %eax, -4(%ebp)
-  # Print second number prompt
-  movl $SYS_WRITE, %eax
-  movl $STDOUT, %ebx
-  leal sn_prompt, %ecx
-  movl $sn_prompt_len, %edx
-  int $0x80
-  # Read second number from stdin
-  call _read_number
-  mov %eax, -8(%ebp)
-  # Add two numbers
-  mov -4(%ebp), %eax
-  mov -8(%ebp), %ebx
-  add %ebx, %eax
-  movl %eax, (ans)
-  # Print answer prompt
-  movl $SYS_WRITE, %eax
-  movl $STDOUT, %ebx
-  leal answer, %ecx
-  movl $answer_len, %edx
-  int $0x80
-  # Print answer value
-  movl $SYS_WRITE, %eax
-  movl $STDOUT, %ebx
-  leal ans, %ecx
-  movl $4, %edx
-  int $0x80
-  # Print newline
-  movl $SYS_WRITE, %eax
-  movl $STDOUT, %ebx
-  leal newline, %ecx
-  movl $newline_len, %edx
-  int $0x80
-  # Back to start
-  jmp _start
-
-subtraction:
-  movl $SYS_WRITE, %eax
-  movl $STDOUT, %ebx
-  movl $321, %ecx
-  movl $10, %edx
-  int $0x80
-  jmp _start
-
   .data
   .equ SYS_EXIT, 1
   .equ SYS_READ, 3
@@ -144,10 +185,4 @@ newline:
 newline_end:
   .equ newline_len, newline_end - newline
 buffer:
-  .space 9
-
-  .bss
-  .lcomm choice, 1
-  .lcomm num1, 4
-  .lcomm num2, 4
-  .lcomm ans, 4
+  .space 10
