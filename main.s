@@ -201,11 +201,14 @@ _write_number:
   # Init procedure
   push %ebp
   mov %esp, %ebp
-  # Convert number into string
+  # Convert number into string (add minus if negative)
   mov 8(%ebp), %eax
   leal buffer, %edi
   movl $10, %ebx
   movl $0, %ecx
+  test %eax, %eax
+  jns write_number_loop
+  neg %eax
 write_number_loop:
   cmpl $0, %eax
   je write_number_end
@@ -217,6 +220,14 @@ write_number_loop:
   inc %ecx
   jmp write_number_loop
 write_number_end:
+  # Add minus if negative
+  mov 8(%ebp), %eax
+  test %eax, %eax
+  jns write_not_negative
+  movb $'-', (%edi)
+  inc %edi
+  inc %ecx
+write_not_negative:
   # Reverse buffer
   leal buffer, %esi
   subl $1, %edi
@@ -268,13 +279,22 @@ added_end:
 convert_loop:
   cmpb $0x0a, (%ecx)
   je loop_end
+  cmpb $'-', (%ecx)
+  je convert_loop_next_iter
   movzbl (%ecx), %ebx
   sub $'0', %ebx
   imul $10, %eax
   add %ebx, %eax
+convert_loop_next_iter:
   inc %ecx
   jmp convert_loop
 loop_end:
+  # Negate number (if minus)
+  leal buffer, %ecx
+  cmpb $'-', (%ecx)
+  jne not_negative
+  neg %eax
+not_negative:
   # Finish procedure
   mov %ebp, %esp
   pop %ebp
