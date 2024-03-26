@@ -25,6 +25,8 @@ _start:
   je multiplication
   cmp $4, %eax
   je division
+  cmp $5, %eax
+  je convert_to_bin
   # Finish procedure
   mov %ebp, %esp
   pop %ebp
@@ -63,7 +65,7 @@ addition:
   movl $answer_len, %edx
   int $0x80
   # Print answer value
-  call _write_number
+  call _write_number_dec
   # Print newline
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
@@ -104,7 +106,7 @@ subtraction:
   movl $answer_len, %edx
   int $0x80
   # Print answer value
-  call _write_number
+  call _write_number_dec
   # Print newline
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
@@ -145,7 +147,7 @@ multiplication:
   movl $answer_len, %edx
   int $0x80
   # Print answer value
-  call _write_number
+  call _write_number_dec
   # Print newline
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
@@ -187,7 +189,7 @@ division:
   movl $answer_len, %edx
   int $0x80
   # Print answer value
-  call _write_number
+  call _write_number_dec
   # Print newline
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
@@ -197,11 +199,83 @@ division:
   # Back to start
   jmp _start
 
-_write_number:
+convert_to_bin:
+  # Print first number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal fn_prompt, %ecx
+  movl $fn_prompt_len, %edx
+  int $0x80
+  # Read first number from stdin
+  call _read_number
+  push %eax
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer, %ecx
+  movl $answer_len, %edx
+  int $0x80
+  # Print answer value
+  call _write_number_bin
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  # Back to start
+  jmp _start
+
+_write_number_bin:
   # Init procedure
   push %ebp
   mov %esp, %ebp
-  # Convert number into string (add minus if negative)
+  # Convert number into string (add minus if negative, if its only 0 then print 0)
+  mov 8(%ebp), %eax
+  movl $0, %ecx
+  leal buffer, %edi
+wnb_loop:
+  cmpl $0, %eax
+  je wnb_loop_end
+  mov %eax, %edx
+  andl $1, %edx
+  addl $48, %edx
+  movb %dl, (%edi)
+  inc %edi
+  inc %ecx
+  shr %eax
+  jmp wnb_loop
+wnb_loop_end:
+  # Reverse buffer
+  leal buffer, %esi
+  subl $1, %edi
+wnb_reverse_loop:
+  cmp %edi, %esi
+  jge wnb_reverse_loop_end
+  movb (%esi), %al
+  movb (%edi), %bl
+  movb %bl, (%esi)
+  movb %al, (%edi)
+  inc %esi
+  dec %edi
+  jmp wnb_reverse_loop
+wnb_reverse_loop_end:
+  # Print number
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  mov %ecx, %edx
+  leal buffer, %ecx
+  int $0x80
+  # Finish procedure
+  mov %ebp, %esp
+  pop %ebp
+  ret
+
+_write_number_dec:
+  # Init procedure
+  push %ebp
+  mov %esp, %ebp
+  # Convert number into string (add minus if negative, if its only 0 then print 0)
   mov 8(%ebp), %eax
   leal buffer, %edi
   movl $10, %ebx
@@ -307,7 +381,7 @@ not_negative:
   .equ STDIN, 0
   .equ STDOUT, 1
 main_menu:
-  .asciz "Kalkulator, wybierz działanie:\n1. Dodawanie\n2. Odejmowanie\n3. Mnożenie\n4. Dzielenie\n0. Wyjdź\n"
+  .asciz "Kalkulator, wybierz działanie:\n1. Dodawanie\n2. Odejmowanie\n3. Mnożenie\n4. Dzielenie\n5. Konwersja na system binarny\n0. Wyjdź\n"
 main_menu_end:
   .equ main_menu_len, main_menu_end - main_menu
 fn_prompt:
