@@ -212,11 +212,39 @@ convert_to_bin:
   # Print answer prompt
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
-  leal answer, %ecx
-  movl $answer_len, %edx
+  leal answer_bin, %ecx
+  movl $answer_bin_len, %edx
   int $0x80
-  # Print answer value
+  # Print answer value (binary)
   call _write_number_bin
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer_dec, %ecx
+  movl $answer_dec_len, %edx
+  int $0x80
+  # Print answer value (decimal)
+  call _write_number_dec
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer_hex, %ecx
+  movl $answer_hex_len, %edx
+  int $0x80
+  # Print answer value (hex)
+  call _write_number_hex
   # Print newline
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
@@ -243,7 +271,7 @@ wnb_loop:
   movb %dl, (%edi)
   inc %edi
   inc %ecx
-  shr %eax
+  shr $1, %eax
   jmp wnb_loop
 wnb_loop_end:
   # Reverse buffer
@@ -327,6 +355,58 @@ reverse_loop_end:
   pop %ebp
   ret
 
+_write_number_hex:
+  # Init procedure
+  push %ebp
+  mov %esp, %ebp
+  # Convert number into string (add minus if negative, if its only 0 then print 0)
+  mov 8(%ebp), %eax
+  movl $0, %ecx
+  leal buffer, %edi
+wnh_loop:
+  cmpl $0, %eax
+  je wnh_loop_end
+  mov %eax, %edx
+  andl $15, %edx
+  cmpl $10, %edx
+  # jeśli mniejsze niż 10 dodaj 48, w innym wypadku dodaj 65
+  jg wnh_add_a
+  addl $48, %edx
+  jmp wnh_set_to_buffer
+wnh_add_a:
+  addl $55, %edx
+wnh_set_to_buffer:
+  movb %dl, (%edi)
+  inc %edi
+  inc %ecx
+  shr $4, %eax
+  jmp wnh_loop
+wnh_loop_end:
+  # Reverse buffer
+  leal buffer, %esi
+  subl $1, %edi
+wnh_reverse_loop:
+  cmp %edi, %esi
+  jge wnh_reverse_loop_end
+  movb (%esi), %al
+  movb (%edi), %bl
+  movb %bl, (%esi)
+  movb %al, (%edi)
+  inc %esi
+  dec %edi
+  jmp wnh_reverse_loop
+wnh_reverse_loop_end:
+  # Print number
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  mov %ecx, %edx
+  leal buffer, %ecx
+  int $0x80
+  # Finish procedure
+  mov %ebp, %esp
+  pop %ebp
+  ret
+
 _read_number:
   # Init procedure
   push %ebp
@@ -381,7 +461,7 @@ not_negative:
   .equ STDIN, 0
   .equ STDOUT, 1
 main_menu:
-  .asciz "Kalkulator, wybierz działanie:\n1. Dodawanie\n2. Odejmowanie\n3. Mnożenie\n4. Dzielenie\n5. Konwersja na system binarny\n0. Wyjdź\n"
+  .asciz "Kalkulator, wybierz działanie:\n1. Dodawanie\n2. Odejmowanie\n3. Mnożenie\n4. Dzielenie\n5. Konwersja na systemy liczbowe\n0. Wyjdź\n"
 main_menu_end:
   .equ main_menu_len, main_menu_end - main_menu
 fn_prompt:
@@ -396,6 +476,18 @@ answer:
   .asciz "Wynik: "
 answer_end:
   .equ answer_len, answer_end - answer
+answer_bin:
+  .asciz "Bin: "
+answer_bin_end:
+  .equ answer_bin_len, answer_bin_end - answer_bin
+answer_dec:
+  .asciz "Dec: "
+answer_dec_end:
+  .equ answer_dec_len, answer_dec_end - answer_dec
+answer_hex:
+  .asciz "Hex: "
+answer_hex_end:
+  .equ answer_hex_len, answer_hex_end - answer_hex
 newline:
   .asciz "\n\r"
 newline_end:
