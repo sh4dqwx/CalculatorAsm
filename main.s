@@ -260,6 +260,17 @@ _write_number_bin:
   mov %esp, %ebp
   # Convert number into string (add minus if negative, if its only 0 then print 0)
   mov 8(%ebp), %eax
+  cmp $0, %eax
+  jne wnb_prepare
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal zero, %ecx
+  movl $1, %edx
+  int $0x80
+  mov %ebp, %esp
+  pop %ebp
+  ret
+wnb_prepare:
   movl $0, %ecx
   leal buffer, %edi
 wnb_loop:
@@ -305,6 +316,17 @@ _write_number_dec:
   mov %esp, %ebp
   # Convert number into string (add minus if negative, if its only 0 then print 0)
   mov 8(%ebp), %eax
+  cmp $0, %eax
+  jne wnd_prepare
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal zero, %ecx
+  movl $1, %edx
+  int $0x80
+  mov %ebp, %esp
+  pop %ebp
+  ret
+wnd_prepare:
   leal buffer, %edi
   movl $10, %ebx
   movl $0, %ecx
@@ -361,6 +383,17 @@ _write_number_hex:
   mov %esp, %ebp
   # Convert number into string (add minus if negative, if its only 0 then print 0)
   mov 8(%ebp), %eax
+  cmp $0, %eax
+  jne wnh_prepare
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal zero, %ecx
+  movl $1, %edx
+  int $0x80
+  mov %ebp, %esp
+  pop %ebp
+  ret
+wnh_prepare:
   movl $0, %ecx
   leal buffer, %edi
 wnh_loop:
@@ -494,3 +527,5 @@ newline_end:
   .equ newline_len, newline_end - newline
 buffer:
   .space 10
+zero:
+  .asciz "0"
