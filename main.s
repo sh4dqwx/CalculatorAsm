@@ -7,7 +7,7 @@ _start:
   # Init procedure
   push %ebp
   mov %esp, %ebp
-  sub $12, %esp
+  sub $20, %esp
   # Print main menu
   movl $SYS_WRITE, %eax
   movl $STDOUT, %ebx
@@ -27,6 +27,8 @@ _start:
   je division
   cmp $5, %eax
   je convert_to_bin
+  cmp $6, %eax
+  je bit_shift
   # Finish procedure
   mov %ebp, %esp
   pop %ebp
@@ -253,6 +255,86 @@ convert_to_bin:
   int $0x80
   # Back to start
   jmp _start
+
+bit_shift:
+  # Print first number prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal fn_prompt, %ecx
+  movl $fn_prompt_len, %edx
+  int $0x80
+  # Read first number from stdin
+  call _read_number
+  mov %eax, -4(%ebp)
+  # Print direction prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal bs_direction_prompt, %ecx
+  movl $bs_direction_prompt_len, %edx
+  int $0x80
+  # Read direction from stdin
+  movl $SYS_READ, %eax
+  movl $STDIN, %ebx
+  leal buffer, %ecx
+  movl $4, %edx
+  int $0x80
+  movl (%ecx), %ecx
+  movl %ecx, -8(%ebp)
+  # Print bit count prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal bs_count_prompt, %ecx
+  movl $bs_count_prompt_len, %edx
+  int $0x80
+  # Read bit count from stdin
+  call _read_number
+  mov %eax, -12(%ebp)
+  # Check direction and shift in specified direction by specified bit count
+  movl -4(%ebp), %eax
+  movl -8(%ebp), %ebx
+  movl -12(%ebp), %ecx
+  cmpb $'L', %bl
+  je bs_left
+  cmpb $'P', %bl
+  je bs_right
+bs_end:
+  jmp _start
+bs_left:
+  shl %cl, %eax
+  push %eax
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer, %ecx
+  movl $answer_len, %edx
+  int $0x80
+  # Print answer value
+  call _write_number_dec
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  jmp bs_end
+bs_right:
+  shr %cl, %eax
+  push %eax
+  # Print answer prompt
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal answer, %ecx
+  movl $answer_len, %edx
+  int $0x80
+  # Print answer value
+  call _write_number_dec
+  # Print newline
+  movl $SYS_WRITE, %eax
+  movl $STDOUT, %ebx
+  leal newline, %ecx
+  movl $newline_len, %edx
+  int $0x80
+  jmp bs_end
 
 _write_number_bin:
   # Init procedure
@@ -494,7 +576,7 @@ not_negative:
   .equ STDIN, 0
   .equ STDOUT, 1
 main_menu:
-  .asciz "Kalkulator, wybierz działanie:\n1. Dodawanie\n2. Odejmowanie\n3. Mnożenie\n4. Dzielenie\n5. Konwersja na systemy liczbowe\n0. Wyjdź\n"
+  .asciz "Kalkulator, wybierz działanie:\n1. Dodawanie\n2. Odejmowanie\n3. Mnożenie\n4. Dzielenie\n5. Konwersja na systemy liczbowe\n6. Przesunięcie bitowe\n0. Wyjdź\n"
 main_menu_end:
   .equ main_menu_len, main_menu_end - main_menu
 fn_prompt:
@@ -505,6 +587,14 @@ sn_prompt:
   .asciz "Druga liczba: "
 sn_prompt_end:
   .equ sn_prompt_len, sn_prompt_end - sn_prompt
+bs_direction_prompt:
+  .asciz "Kierunek (L/P): "
+bs_direction_prompt_end:
+  .equ bs_direction_prompt_len, bs_direction_prompt_end - bs_direction_prompt
+bs_count_prompt:
+  .asciz "Liczba bitów: "
+bs_count_prompt_end:
+  .equ bs_count_prompt_len, bs_count_prompt_end - bs_count_prompt
 answer:
   .asciz "Wynik: "
 answer_end:
